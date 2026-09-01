@@ -1,0 +1,42 @@
+services:
+  db:
+    image: pgvector/pgvector:pg16
+    environment:
+      POSTGRES_DB: ecomcare
+      POSTGRES_USER: ecomcare
+      POSTGRES_PASSWORD: ecomcare
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ecomcare -d ecomcare"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+    volumes:
+      - ecomcare_db:/var/lib/postgresql/data
+
+  backend:
+    build: ./backend
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql+asyncpg://ecomcare:ecomcare@db:5432/ecomcare
+      CHECKPOINT_DATABASE_URL: postgresql://ecomcare:ecomcare@db:5432/ecomcare
+      CORS_ORIGINS: http://localhost:5173
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        VITE_API_URL: http://localhost:8000/api/v1
+    ports:
+      - "5173:80"
+    depends_on:
+      - backend
+
+volumes:
+  ecomcare_db:

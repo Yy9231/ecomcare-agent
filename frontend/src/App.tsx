@@ -1,0 +1,83 @@
+import { Bot, Headphones, LayoutDashboard, LogOut, ShieldCheck } from "lucide-react";
+import { lazy, Suspense, useEffect, useState } from "react";
+import { clearSession, loadSession, saveSession, validateSession, type AuthSession, type Role } from "./lib/auth";
+
+const AgentWorkspace = lazy(() => import("./components/AgentWorkspace"));
+const CustomerChat = lazy(() => import("./components/CustomerChat"));
+const LoginPage = lazy(() => import("./components/LoginPage"));
+
+type SystemRoute = Role;
+
+function resolveSystemRoute(): SystemRoute {
+  // 客户端和客服端使用独立 URL，避免在同一页面混用角色能力。
+  const path = window.location.pathname.replace(/\/+$/, "") || "/";
+  if (path === "/") window.history.replaceState(null, "", "/customer");
+  return path === "/agent" || path.startsWith("/agent/") ? "agent" : "customer";
+}
+
+export default function App() {
+  const route = resolveSystemRoute();
+  const isAgent = route === "agent";
+  const SystemIcon = isAgent ? LayoutDashboard : Headphones;
+  const [session, setSession] = useState<AuthSession | null>(() => loadSession(route));
+  const [checking, setChecking] = useState(Boolean(session));
+  const accessToken = session?.access_token;
+
+  useEffect(() => {
+    document.title = isAgent ? "EcomCare 客服工作台" : "EcomCare 客户服务";
+  }, [isAgent]);
+
+  useEffect(() => {
+    if (!accessToken) return;
+    // 本地 Token 只用于恢复候选登录态，页面启动后仍由服务端 /auth/me 验证。
+    let cancelled = false;
+    validateSession(accessToken).then((renewed) => {
+      if (!cancelled) {
+        saveSession(renewed);
+        setSession(renewed);
+        setChecking(false);
+      }
+    }).catch(() => {
+      if (!cancelled) {
+        clearSession(route);
+        setSession(null);
+        setChecking(false);
+      }
+    });
+    return () => { cancelled = true; };
+  }, [accessToken, route]);
+
+  function logout() {
+    clearSession(route);
+    setSession(null);
+  }
+
+  return (
+    <div className={`app-shell ${route} min-h-screen bg-[var(--canvas)] text-slate-900`}>
+      <header className="topbar">
+        <div className="brand-lockup">
+          <div className="logo-mark"><Bot size={22} /></div>
+          <div>
+            <p className="font-display text-lg font-semibold leading-none">EcomCare</p>
+            <p className="mt-1 text-[11px] tracking-[0.18em] text-slate-500">CUSTOMER INTELLIGENCE</p>
+          </div>
+        </div>
+        <div className={`system-badge ${route}`}>
+          <SystemIcon size={17} />
+          <div>
+            <strong>{isAgent ? "客服运营中心" : "客户服务中心"}</strong>
+            <span>{isAgent ? "审批与审计" : "智能咨询与售后"}</span>
+          </div>
+        </div>
+        {session ? <button className="logout-button" onClick={logout}><LogOut size={15} />退出登录</button> : <div className="safety-label"><ShieldCheck size={16} /> 合成数据 · 安全演示</div>}
+      </header>
+      <main>
+        <Suspense fallback={<div className="page-loading">正在进入{isAgent ? "客服工作台" : "客户服务"}…</div>}>
+          {checking ? <div className="page-loading">正在恢复登录状态…</div> : session ? (
+            isAgent ? <AgentWorkspace token={session.access_token} /> : <CustomerChat token={session.access_token} customerName={session.display_name} customerId={session.customer_id} />
+          ) : <LoginPage role={route} onLogin={setSession} />}
+        </Suspense>
+      </main>
+    </div>
+  );
+}
