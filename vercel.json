@@ -13,6 +13,22 @@
   },
   "rewrites": [
     {
+      "source": "/customer",
+      "destination": {
+        "type": "service",
+        "service": "frontend",
+        "path": "/"
+      }
+    },
+    {
+      "source": "/agent",
+      "destination": {
+        "type": "service",
+        "service": "frontend",
+        "path": "/"
+      }
+    },
+    {
       "source": "/api(/.*)?",
       "destination": {
         "type": "service",
