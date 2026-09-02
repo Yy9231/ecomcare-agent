@@ -20,12 +20,24 @@ function resolveSystemRoute(): SystemRoute {
 }
 
 export default function App() {
-  const route = resolveSystemRoute();
+  const [route, setRoute] = useState<SystemRoute>(() => resolveSystemRoute());
   const isAgent = route === "agent";
   const SystemIcon = isAgent ? LayoutDashboard : Headphones;
   const [session, setSession] = useState<AuthSession | null>(() => loadSession(route));
   const [checking, setChecking] = useState(Boolean(session));
   const accessToken = session?.access_token;
+
+  useEffect(() => {
+    const handleHashChange = () => {
+      const nextRoute = resolveSystemRoute();
+      const nextSession = loadSession(nextRoute);
+      setRoute(nextRoute);
+      setSession(nextSession);
+      setChecking(Boolean(nextSession));
+    };
+    window.addEventListener("hashchange", handleHashChange);
+    return () => window.removeEventListener("hashchange", handleHashChange);
+  }, []);
 
   useEffect(() => {
     document.title = isAgent ? "EcomCare 客服工作台" : "EcomCare 客户服务";
