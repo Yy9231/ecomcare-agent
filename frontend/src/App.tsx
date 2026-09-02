@@ -1,4 +1,4 @@
-import { Bot, Headphones, LayoutDashboard, LogOut, ShieldCheck } from "lucide-react";
+import { Bot, Headphones, LayoutDashboard, LogOut } from "lucide-react";
 import { lazy, Suspense, useEffect, useState } from "react";
 import { clearSession, loadSession, saveSession, validateSession, type AuthSession, type Role } from "./lib/auth";
 
@@ -85,7 +85,7 @@ export default function App() {
             <span>{isAgent ? "审批与审计" : "智能咨询与售后"}</span>
           </div>
         </div>
-        {session ? <button className="logout-button" onClick={logout}><LogOut size={15} />退出登录</button> : <div className="safety-label"><ShieldCheck size={16} /> 合成数据 · 安全演示</div>}
+        {session ? <button className="logout-button" onClick={logout}><LogOut size={15} />退出登录</button> : null}
       </header>
       <main>
         <Suspense fallback={<div className="page-loading">正在进入{isAgent ? "客服工作台" : "客户服务"}…</div>}>
