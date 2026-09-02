@@ -1,4 +1,5 @@
 from functools import lru_cache
+from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 
 from pydantic import SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -28,6 +29,33 @@ class Settings(BaseSettings):
     @property
     def allowed_origins(self) -> list[str]:
         return [origin.strip() for origin in self.cors_origins.split(",") if origin.strip()]
+
+    @property
+    def async_database_url(self) -> str:
+        """把 Neon 标准连接串转换为 SQLAlchemy asyncpg 可用格式。"""
+        parts = urlsplit(self.database_url)
+        if parts.scheme in {"postgres", "postgresql"}:
+            scheme = "postgresql+asyncpg"
+        elif parts.scheme == "postgresql+asyncpg":
+            scheme = parts.scheme
+        else:
+            return self.database_url
+
+        query = []
+        has_ssl = False
+        for key, value in parse_qsl(parts.query, keep_blank_values=True):
+            # asyncpg 使用 ssl 参数，且不识别 Neon libpq 的 channel_binding 参数。
+            if key == "channel_binding":
+                continue
+            if key == "ssl":
+                has_ssl = True
+            if key == "sslmode":
+                if not has_ssl:
+                    query.append(("ssl", value))
+                    has_ssl = True
+                continue
+            query.append((key, value))
+        return urlunsplit((scheme, parts.netloc, parts.path, urlencode(query), parts.fragment))
 
 
 @lru_cache

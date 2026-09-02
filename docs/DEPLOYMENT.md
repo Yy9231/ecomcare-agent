@@ -7,30 +7,30 @@
 3. 保存 psycopg URL 为 `CHECKPOINT_DATABASE_URL`，格式为 `postgresql://...`。
 4. 两个 URL 指向同一数据库，但驱动前缀不同；不要提交到 Git。
 
-## 2. Vercel 后端（无银行卡的默认方案）
+## 2. Vercel 前后端（无银行卡的默认方案）
 
-从 Git 仓库创建第一个 Vercel Project，把 Root Directory 设置为 `backend`。Vercel 会从
-`app/main.py` 自动识别 FastAPI，并按照 `backend/vercel.json` 将函数最长执行时间设置为
-60 秒。配置以下 Production 环境变量：
+仓库根目录的 `vercel.json` 把前端和后端定义为同一个 Project 的两个 Service：静态页面
+交给 `frontend`，`/api/*` 请求转发到 `backend`。Vercel 会从 `app/main.py` 自动识别
+FastAPI，并按照 `backend/vercel.json` 将函数最长执行时间设置为 60 秒。配置以下
+Production 环境变量：
 
 ```text
-DATABASE_URL=postgresql+asyncpg://...?...&ssl=require
+DATABASE_URL=postgresql://...?...&sslmode=require
 CHECKPOINT_DATABASE_URL=postgresql://...?...&sslmode=require
 JWT_SECRET=<随机长字符串>
 MODEL_CREDENTIALS_SECRET=<随机长字符串>
-CORS_ORIGINS=https://your-frontend.vercel.app
 PUBLIC_DEMO_MODE=true
 MODEL_ENABLED=false
 ```
 
-`DATABASE_URL` 使用 SQLAlchemy asyncpg 驱动，Neon URL 中的 `sslmode=require` 需要改为
-`ssl=require`，并移除 asyncpg 不支持的 `channel_binding` 参数。
-`CHECKPOINT_DATABASE_URL` 由 psycopg 使用，保留 Neon 原始参数。两个地址都不得提交到 Git。
+两个数据库变量可以粘贴同一条 Neon 标准连接串：应用会在内存中把 `DATABASE_URL`
+安全转换成 asyncpg 格式，`CHECKPOINT_DATABASE_URL` 则保留给 psycopg 使用。连接串不得
+提交到 Git。
 
 部署完成后验证：
 
 ```bash
-curl -fsS https://your-api.vercel.app/api/v1/health/ready
+curl -fsS https://your-project.vercel.app/api/v1/health/ready
 ```
 
 ## 3. Render 后端（备选）
@@ -41,17 +41,7 @@ curl -fsS https://your-api.vercel.app/api/v1/health/ready
 curl -fsS https://your-api.onrender.com/api/v1/health/ready
 ```
 
-## 4. Vercel 前端
-
-导入仓库并把 Root Directory 设为 `frontend`，配置：
-
-```text
-VITE_API_URL=https://your-api.vercel.app/api/v1
-```
-
-部署完成后，把前端正式域名写回后端 Project 的 `CORS_ORIGINS` 并重新部署后端。
-
-## 5. 上线验收
+## 4. 上线验收
 
 - 打开 Vercel 域名，分别使用客户与客服演示账号登录，并确认客户历史会话可以恢复。
 - 完成物流查询，确认浏览器收到 `message_delta` 和 `done`。
