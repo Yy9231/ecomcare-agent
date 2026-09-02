@@ -20,8 +20,8 @@ cp .env.example .env
 docker compose up --build
 ```
 
-- 客户体验系统：<http://localhost:5173/customer>
-- 客服工作台：<http://localhost:5173/agent>
+- 客户体验系统：<http://localhost:5173/#/customer>
+- 客服工作台：<http://localhost:5173/#/agent>
 - OpenAPI：<http://localhost:8000/docs>
 - 健康检查：<http://localhost:8000/api/v1/health/ready>
 

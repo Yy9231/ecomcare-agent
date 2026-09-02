@@ -44,6 +44,7 @@ curl -fsS https://your-api.onrender.com/api/v1/health/ready
 ## 4. 上线验收
 
 - 打开 Vercel 域名，分别使用客户与客服演示账号登录，并确认客户历史会话可以恢复。
+- 线上独立入口分别为 `/#/customer` 与 `/#/agent`；Hash 路由确保刷新时仍由 CDN 返回前端入口。
 - 完成物流查询，确认浏览器收到 `message_delta` 和 `done`。
 - 创建退货申请，在客服工作台批准，刷新会话看到售后编号。
 - 检查 Vercel Function 日志无数据库、CORS 或 checkpoint 错误。

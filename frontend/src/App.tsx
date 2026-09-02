@@ -10,8 +10,12 @@ type SystemRoute = Role;
 
 function resolveSystemRoute(): SystemRoute {
   // 客户端和客服端使用独立 URL，避免在同一页面混用角色能力。
+  // 线上使用 Hash 路由，刷新时 CDN 只需返回根页面，不依赖服务端 SPA fallback。
+  const hashPath = window.location.hash.replace(/^#/, "").replace(/\/+$/, "") || "/";
+  if (hashPath === "/agent" || hashPath.startsWith("/agent/")) return "agent";
+  if (hashPath === "/customer" || hashPath.startsWith("/customer/")) return "customer";
   const path = window.location.pathname.replace(/\/+$/, "") || "/";
-  if (path === "/") window.history.replaceState(null, "", "/customer");
+  if (path === "/") window.history.replaceState(null, "", "/#/customer");
   return path === "/agent" || path.startsWith("/agent/") ? "agent" : "customer";
 }
 
