@@ -29,6 +29,9 @@ dependencies = [
 ecomcare-eval = "app.evaluation:main"
 ecomcare-model-check = "app.model_check:main"
 
+[tool.vercel]
+entrypoint = "app.main:app"
+
 
 [project.optional-dependencies]
 dev = [
