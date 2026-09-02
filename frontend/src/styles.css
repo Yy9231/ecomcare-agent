@@ -274,8 +274,6 @@ button:focus-visible, input:focus-visible, textarea:focus-visible {
 .login-button { min-height: 46px; margin-top: 10px; display: flex; align-items: center; justify-content: center; gap: 8px; border: 0; border-radius: 12px; color: white; background: var(--green); box-shadow: 0 9px 22px rgba(17,97,73,.2); font-size: 13px; font-weight: 700; transition: background-color .16s ease, transform .16s ease, opacity .16s ease; }
 .login-button:not(:disabled):hover { background: var(--green-dark); transform: translateY(-1px); }
 .login-button:disabled { cursor: wait; opacity: .55; }
-.demo-account { margin-top: 18px; padding: 11px 12px; display: flex; justify-content: space-between; gap: 10px; border-radius: 10px; color: #849088; background: #f3f6f2; font-size: 10px; }
-.demo-account code { color: #32614f; font-weight: 700; }
 
 .customer-shell { position: relative; }
 .customer-shell::before {

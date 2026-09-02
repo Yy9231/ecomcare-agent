@@ -4,8 +4,8 @@ import { login, saveSession, type AuthSession, type Role } from "../lib/auth";
 
 export default function LoginPage({ role, onLogin }: { role: Role; onLogin: (session: AuthSession) => void }) {
   const agent = role === "agent";
-  const [username, setUsername] = useState(agent ? "agent" : "customer1");
-  const [password, setPassword] = useState(agent ? "agent123" : "customer123");
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   const RoleIcon = agent ? LayoutDashboard : Headphones;
@@ -42,7 +42,6 @@ export default function LoginPage({ role, onLogin }: { role: Role; onLogin: (ses
           {error ? <p className="login-error" role="alert">{error}</p> : null}
           <button className="login-button" disabled={busy || !username.trim() || password.length < 8}><LogIn size={17} />{busy ? "登录中…" : "登录"}</button>
         </form>
-        <div className="demo-account"><span>演示账号</span><code>{agent ? "agent / agent123" : "customer1 / customer123"}</code></div>
       </section>
     </div>
   );
