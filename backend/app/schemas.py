@@ -48,6 +48,7 @@ class RouteDecision(BaseModel):
         "return_check",
         "after_sales",
         "escalate",
+        "general_chat",
     ]
     order_no: str | None = None
     reason: str | None = None

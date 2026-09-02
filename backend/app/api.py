@@ -157,8 +157,10 @@ async def stream_message(
                 },
                 config={"configurable": {"thread_id": conversation_id}},
             )
-            yield serialize_sse("tool_started", {"name": result.get("tool_name", "agent")})
-            yield serialize_sse("tool_finished", {"result": result.get("tool_result", {})})
+            # 普通寒暄直接回答，不向前端伪造不存在的工具调用状态。
+            if result.get("tool_name"):
+                yield serialize_sse("tool_started", {"name": result["tool_name"]})
+                yield serialize_sse("tool_finished", {"result": result.get("tool_result", {})})
             interrupts = result.get("__interrupt__", [])
             if interrupts:
                 # interrupt 提案幂等落库；重复请求不会生成多张待审批单。

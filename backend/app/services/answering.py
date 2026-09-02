@@ -19,6 +19,11 @@ def deterministic_answer(intent: str, result: dict) -> str:
     """将可信工具结果转为稳定回答，也是外部模型失败时的降级输出。"""
     if "error" in result:
         return str(result["error"])
+    if intent == "general_chat":
+        return (
+            "您好，我是 EcomCare AI 客服，可以帮助您查询订单与物流、解答商品和售后政策问题，"
+            "也可以协助发起售后申请。请问有什么可以帮您？"
+        )
     if intent == "knowledge_query":
         chunks = result.get("chunks", [])
         return "根据知识库：" + "；".join(chunk["content"] for chunk in chunks)

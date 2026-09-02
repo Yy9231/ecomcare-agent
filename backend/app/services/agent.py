@@ -24,7 +24,7 @@ class AgentState(TypedDict, total=False):
     intent: str
     order_no: str | None
     reason: str | None
-    tool_name: str
+    tool_name: str | None
     tool_result: dict
     answer: str | None
     references: list[dict]
@@ -51,6 +51,9 @@ async def route_node(state: AgentState) -> dict:
         "reason": decision.reason,
         "idempotency_key": f"{state['conversation_id']}:{uuid.uuid5(uuid.NAMESPACE_URL, state['user_message'])}",
         "answer": None,
+        "tool_name": None,
+        "tool_result": {},
+        "references": [],
         "model_provider": None,
         "model_name": None,
         "model_used": False,
@@ -101,6 +104,11 @@ async def tool_node(state: AgentState) -> dict:
             references = result.get("chunks", [])
     await _trace(state["conversation_id"], name, started, result)
     return {"tool_name": name, "tool_result": result, "references": references}
+
+
+def route_target(state: AgentState) -> str:
+    """普通对话直接生成回答，其余意图才允许进入业务工具层。"""
+    return "final" if state["intent"] == "general_chat" else "tool"
 
 
 def approval_route(state: AgentState) -> str:
@@ -170,7 +178,7 @@ def build_graph(checkpointer):
     builder.add_node("approval", approval_node)
     builder.add_node("final", final_node)
     builder.add_edge(START, "route")
-    builder.add_edge("route", "tool")
+    builder.add_conditional_edges("route", route_target, {"tool": "tool", "final": "final"})
     builder.add_conditional_edges("tool", approval_route, {"approval": "approval", "final": "final"})
     builder.add_edge("approval", "final")
     builder.add_edge("final", END)

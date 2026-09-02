@@ -31,6 +31,12 @@ def test_deterministic_logistics_answer() -> None:
     assert "SF001" in answer
 
 
+def test_deterministic_general_chat_answer_identifies_service() -> None:
+    answer = deterministic_answer("general_chat", {})
+    assert "EcomCare" in answer
+    assert "AI 客服" in answer
+
+
 @pytest.mark.asyncio
 async def test_generate_answer_uses_model_after_tool_result(monkeypatch) -> None:
     async def fake_invoke(prompt: str, settings: Settings) -> GeneratedText:

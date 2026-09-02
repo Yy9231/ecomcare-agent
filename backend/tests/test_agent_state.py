@@ -33,6 +33,14 @@ async def test_route_node_clears_previous_turn_output(monkeypatch) -> None:
         }
     )
     assert update["answer"] is None
+    assert update["tool_name"] is None
+    assert update["tool_result"] == {}
+    assert update["references"] == []
     assert update["model_provider"] is None
     assert update["model_name"] is None
     assert update["model_used"] is False
+
+
+def test_general_chat_skips_business_tools() -> None:
+    assert agent.route_target({"intent": "general_chat"}) == "final"
+    assert agent.route_target({"intent": "knowledge_query"}) == "tool"
