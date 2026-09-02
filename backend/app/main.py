@@ -37,7 +37,13 @@ async def lifespan(app: FastAPI):
     await engine.dispose()
 
 
-app = FastAPI(title="EcomCare Agent API", version="0.1.0", lifespan=lifespan)
+app = FastAPI(
+    title="EcomCare Agent API",
+    version="0.1.0",
+    lifespan=lifespan,
+    docs_url="/api/docs",
+    openapi_url="/api/openapi.json",
+)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=get_settings().allowed_origins,

@@ -4,6 +4,13 @@
 
 > 仓库只包含合成客户、商品和订单。默认离线模式不调用付费模型；启用后可接入 OpenAI、DeepSeek、通义千问、Kimi、智谱、豆包、Claude、Gemini、Ollama 及自定义 OpenAI-compatible 服务。
 
+## 在线演示
+
+- 客户体验系统：<https://ecomcare-agent.vercel.app/#/customer>
+- 客服工作台：<https://ecomcare-agent.vercel.app/#/agent>
+- API 文档：<https://ecomcare-agent.vercel.app/api/docs>
+- 健康检查：<https://ecomcare-agent.vercel.app/api/v1/health/ready>
+
 ## 核心演示
 
 1. 客户发送“订单 `EC2026080001` 的物流到哪了”，Agent 校验订单归属后调用物流工具。
@@ -22,7 +29,7 @@ docker compose up --build
 
 - 客户体验系统：<http://localhost:5173/#/customer>
 - 客服工作台：<http://localhost:5173/#/agent>
-- OpenAPI：<http://localhost:8000/docs>
+- OpenAPI：<http://localhost:8000/api/docs>
 - 健康检查：<http://localhost:8000/api/v1/health/ready>
 
 首次启动会创建 pgvector 扩展、LangGraph checkpoint 表、业务表，并写入 30 个商品、100 个订单和 95 篇知识片段。每个商品均包含产品介绍、详细参数以及使用与保修说明。
@@ -93,4 +100,4 @@ make model-check
 - 这是作品集演示系统，不连接真实电商、支付或物流平台。
 - 默认哈希 Embedding 用于无密钥、可重复演示；线上作品可替换为同维度 OpenAI-compatible Embedding 并重新索引。
 - 登录使用合成账号和 PBKDF2 密码哈希，适合作品演示；生产环境仍应补充注册、找回密码、限流和多因素认证。
-- Render、Neon、Vercel 的部署配置需要在对应平台创建项目后填写真实域名和密钥；本仓库不会代替用户创建付费资源。
+- 公开 Demo 使用 Vercel Hobby 与 Neon Free；生产业务应另行配置容量、监控、备份、限流和密钥轮换。

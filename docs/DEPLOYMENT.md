@@ -1,5 +1,11 @@
 # 在线部署
 
+当前已验证的公开 Demo：
+
+- 客户：<https://ecomcare-agent.vercel.app/#/customer>
+- 客服：<https://ecomcare-agent.vercel.app/#/agent>
+- API：<https://ecomcare-agent.vercel.app/api/docs>
+
 ## 1. Neon PostgreSQL
 
 1. 创建 PostgreSQL 项目并在 SQL Editor 执行 `CREATE EXTENSION IF NOT EXISTS vector;`。
@@ -51,4 +57,4 @@ curl -fsS https://your-api.onrender.com/api/v1/health/ready
 - 确认模型选择器显示“规则模式（公开演示）”，且不提供外部模型配置入口。
 - Vercel Function 可能发生冷启动，正式演示前先访问后端健康检查完成预热。
 
-本地实现不包含真实线上地址。创建 Neon、Render 和 Vercel 资源需要用户账户授权，完成实际部署并验证前，简历不得写“已上线”。
+当前 Vercel + Neon 环境已经完成健康检查、双角色登录、物流查询及“退货申请 → 人工审批 → 恢复执行”验收。
