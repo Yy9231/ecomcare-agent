@@ -55,8 +55,11 @@ async def register(payload: RegisterRequest, session: AsyncSession = Depends(get
         role="customer",
         customer_id=customer.id,
     )
-    session.add_all([customer, account])
     try:
+        # 两个模型没有 ORM relationship，显式 flush 保证外键目标先落库。
+        session.add(customer)
+        await session.flush()
+        session.add(account)
         await session.commit()
     except IntegrityError as exc:
         # 并发注册同一用户名时由数据库唯一约束兜底。
@@ -64,10 +67,7 @@ async def register(payload: RegisterRequest, session: AsyncSession = Depends(get
         sqlstate = getattr(exc.orig, "sqlstate", None)
         if sqlstate == "23505":
             raise HTTPException(status_code=409, detail="注册数据冲突，请更换账号后重试") from exc
-        raise HTTPException(
-            status_code=500,
-            detail=f"注册数据写入失败（{sqlstate or 'unknown'}）",
-        ) from exc
+        raise HTTPException(status_code=500, detail="注册失败，请稍后重试") from exc
     return _response(account, customer)
 
 

@@ -12,7 +12,7 @@ from app.schemas import RegisterRequest
 @pytest.mark.asyncio
 async def test_register_creates_customer_account_and_session(monkeypatch) -> None:
     session = AsyncMock()
-    session.add_all = Mock()
+    session.add = Mock()
     session.scalar.return_value = None
     monkeypatch.setattr(auth, "hash_password", lambda password: f"hashed:{password}")
 
@@ -21,7 +21,8 @@ async def test_register_creates_customer_account_and_session(monkeypatch) -> Non
         session,
     )
 
-    customer, account = session.add_all.call_args.args[0]
+    customer = session.add.call_args_list[0].args[0]
+    account = session.add.call_args_list[1].args[0]
     assert isinstance(customer, Customer)
     assert isinstance(account, Account)
     assert customer.name == "新客户"
@@ -33,6 +34,7 @@ async def test_register_creates_customer_account_and_session(monkeypatch) -> Non
     assert len(account.id) <= 20
     assert response.role == "customer"
     assert response.display_name == "新客户"
+    session.flush.assert_awaited_once()
     session.commit.assert_awaited_once()
 
 
