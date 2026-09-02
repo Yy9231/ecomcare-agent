@@ -39,6 +39,13 @@ export function login(username: string, password: string) {
   });
 }
 
+export function registerCustomer(username: string, displayName: string, password: string) {
+  return request<AuthSession>("/auth/register", undefined, {
+    method: "POST",
+    body: JSON.stringify({ username, display_name: displayName, password }),
+  });
+}
+
 export function validateSession(token: string) {
   return request<AuthSession>("/auth/me", token);
 }

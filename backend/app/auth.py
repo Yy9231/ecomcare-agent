@@ -1,11 +1,12 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_session
-from app.models import Account, Customer
-from app.schemas import LoginRequest, LoginResponse
-from app.security import create_token, current_identity, verify_password
+from app.models import Account, Customer, new_id
+from app.schemas import LoginRequest, LoginResponse, RegisterRequest
+from app.security import create_token, current_identity, hash_password, verify_password
 
 router = APIRouter(prefix="/api/v1/auth", tags=["auth"])
 
@@ -30,6 +31,30 @@ async def login(payload: LoginRequest, session: AsyncSession = Depends(get_sessi
     customer = await session.get(Customer, account.customer_id)
     if not customer:
         raise HTTPException(status_code=401, detail="账号未绑定有效身份")
+    return _response(account, customer)
+
+
+@router.post("/register", response_model=LoginResponse, status_code=201)
+async def register(payload: RegisterRequest, session: AsyncSession = Depends(get_session)):
+    """注册普通客户账号；角色固定由服务端写入，不能通过请求提升为客服。"""
+    existing = await session.scalar(select(Account).where(Account.username == payload.username))
+    if existing:
+        raise HTTPException(status_code=409, detail="该账号已被注册")
+    customer = Customer(id=new_id(), name=payload.display_name, tier="standard")
+    account = Account(
+        id=new_id(),
+        username=payload.username,
+        password_hash=hash_password(payload.password),
+        role="customer",
+        customer_id=customer.id,
+    )
+    session.add_all([customer, account])
+    try:
+        await session.commit()
+    except IntegrityError as exc:
+        # 并发注册同一用户名时由数据库唯一约束兜底。
+        await session.rollback()
+        raise HTTPException(status_code=409, detail="该账号已被注册") from exc
     return _response(account, customer)
 
 

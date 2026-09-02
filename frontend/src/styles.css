@@ -265,7 +265,11 @@ button:focus-visible, input:focus-visible, textarea:focus-visible {
 .login-role-icon.agent { background: #173f33; }
 .login-card h1 { margin: 8px 0 10px; color: var(--ink); font-family: Georgia, serif; font-size: 32px; letter-spacing: -.03em; }
 .login-description { color: #708078; font-size: 13px; line-height: 1.7; text-wrap: pretty; }
+.auth-mode-switch { margin-top: 22px; padding: 4px; display: grid; grid-template-columns: 1fr 1fr; gap: 4px; border: 1px solid #d5e0d9; border-radius: 13px; background: #f2f6f3; }
+.auth-mode-switch button { min-height: 38px; border: 0; border-radius: 9px; color: #718078; background: transparent; font-size: 12px; font-weight: 700; transition: color .16s ease, background-color .16s ease, box-shadow .16s ease; }
+.auth-mode-switch button.active { color: var(--green); background: white; box-shadow: 0 4px 13px rgba(27, 71, 54, .1); }
 .login-form { margin-top: 26px; display: grid; gap: 8px; }
+.auth-mode-switch + .login-form { margin-top: 16px; }
 .login-form label { margin-top: 8px; color: #405148; font-size: 11px; font-weight: 700; }
 .login-input { height: 46px; padding: 0 13px; display: flex; align-items: center; gap: 9px; border: 1px solid #ccd8d0; border-radius: 12px; color: #7c8c84; background: white; transition: border-color .16s ease, box-shadow .16s ease; }
 .login-input:focus-within { border-color: #5a947c; box-shadow: 0 0 0 3px #dcefe7; }

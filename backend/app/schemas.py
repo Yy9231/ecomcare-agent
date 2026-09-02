@@ -1,11 +1,39 @@
+import re
 from typing import Literal
 
-from pydantic import BaseModel, Field, SecretStr
+from pydantic import BaseModel, Field, SecretStr, field_validator
+
+USERNAME_PATTERN = re.compile(r"^[a-z0-9_]{3,32}$")
+
+
+def _normalize_username(value: str) -> str:
+    normalized = value.strip().lower()
+    if not USERNAME_PATTERN.fullmatch(normalized):
+        raise ValueError("账号只能包含 3–32 位英文字母、数字或下划线")
+    return normalized
 
 
 class LoginRequest(BaseModel):
     username: str = Field(min_length=3, max_length=80)
     password: str = Field(min_length=8, max_length=128)
+
+    normalize_username = field_validator("username")(_normalize_username)
+
+
+class RegisterRequest(BaseModel):
+    username: str = Field(min_length=3, max_length=80)
+    display_name: str = Field(min_length=2, max_length=40)
+    password: str = Field(min_length=8, max_length=128)
+
+    normalize_username = field_validator("username")(_normalize_username)
+
+    @field_validator("display_name")
+    @classmethod
+    def normalize_display_name(cls, value: str) -> str:
+        normalized = value.strip()
+        if len(normalized) < 2:
+            raise ValueError("昵称至少需要 2 个字符")
+        return normalized
 
 
 class LoginResponse(BaseModel):
