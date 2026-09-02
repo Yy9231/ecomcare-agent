@@ -61,7 +61,13 @@ async def register(payload: RegisterRequest, session: AsyncSession = Depends(get
     except IntegrityError as exc:
         # 并发注册同一用户名时由数据库唯一约束兜底。
         await session.rollback()
-        raise HTTPException(status_code=409, detail="该账号已被注册") from exc
+        sqlstate = getattr(exc.orig, "sqlstate", None)
+        if sqlstate == "23505":
+            raise HTTPException(status_code=409, detail="注册数据冲突，请更换账号后重试") from exc
+        raise HTTPException(
+            status_code=500,
+            detail=f"注册数据写入失败（{sqlstate or 'unknown'}）",
+        ) from exc
     return _response(account, customer)
 
 
