@@ -1,14 +1,21 @@
+import secrets
+
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_session
-from app.models import Account, Customer, new_id
+from app.models import Account, Customer
 from app.schemas import LoginRequest, LoginResponse, RegisterRequest
 from app.security import create_token, current_identity, hash_password, verify_password
 
 router = APIRouter(prefix="/api/v1/auth", tags=["auth"])
+
+
+def _registration_id(prefix: str) -> str:
+    """生成兼容早期演示库短字段的随机业务 ID。"""
+    return f"{prefix}-{secrets.token_hex(6).upper()}"
 
 
 def _response(account: Account, customer: Customer) -> LoginResponse:
@@ -40,9 +47,9 @@ async def register(payload: RegisterRequest, session: AsyncSession = Depends(get
     existing = await session.scalar(select(Account).where(Account.username == payload.username))
     if existing:
         raise HTTPException(status_code=409, detail="该账号已被注册")
-    customer = Customer(id=new_id(), name=payload.display_name, tier="standard")
+    customer = Customer(id=_registration_id("CUST"), name=payload.display_name, tier="standard")
     account = Account(
-        id=new_id(),
+        id=_registration_id("ACC"),
         username=payload.username,
         password_hash=hash_password(payload.password),
         role="customer",

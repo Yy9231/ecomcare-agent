@@ -29,6 +29,8 @@ async def test_register_creates_customer_account_and_session(monkeypatch) -> Non
     assert account.password_hash == "hashed:secure123"
     assert account.role == "customer"
     assert account.customer_id == customer.id
+    assert len(customer.id) <= 20
+    assert len(account.id) <= 20
     assert response.role == "customer"
     assert response.display_name == "新客户"
     session.commit.assert_awaited_once()
