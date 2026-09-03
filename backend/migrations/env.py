@@ -9,7 +9,9 @@ from app.config import get_settings
 from app.database import Base
 
 config = context.config
-config.set_main_option("sqlalchemy.url", get_settings().database_url)
+# Alembic 与应用运行时必须使用同一条规范化连接串，避免把 Neon 的
+# sslmode、channel_binding 等 libpq 参数原样传给 asyncpg。
+config.set_main_option("sqlalchemy.url", get_settings().async_database_url)
 if config.config_file_name:
     fileConfig(config.config_file_name)
 target_metadata = Base.metadata
