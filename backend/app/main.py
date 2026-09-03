@@ -1,7 +1,9 @@
 from contextlib import AsyncExitStack, asynccontextmanager
+from pathlib import Path
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
 from sqlalchemy import text
 
@@ -79,3 +81,10 @@ async def model_status() -> dict:
             "message": "External model is disabled",
         }
     return resolve_model(settings).public_status(enabled=True)
+
+
+# 魔搭 Docker 镜像会把编译后的 React 复制到此目录。API 路由先注册，
+# 所以根路径静态挂载不会截获 /api 请求；本地开发时目录不存在则自动跳过。
+frontend_dist = Path("/app/frontend-dist")
+if frontend_dist.is_dir():
+    app.mount("/", StaticFiles(directory=frontend_dist, html=True), name="frontend")

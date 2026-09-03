@@ -5,12 +5,12 @@ import secrets
 from datetime import UTC, datetime, timedelta
 
 import jwt
-from fastapi import Depends, HTTPException
+from fastapi import Depends, Header, HTTPException
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
 from app.config import get_settings
 
-bearer = HTTPBearer()
+bearer = HTTPBearer(auto_error=False)
 
 
 PASSWORD_ITERATIONS = 600_000
@@ -50,12 +50,16 @@ def create_token(account_id: str, customer_id: str, role: str) -> str:
 
 
 def current_identity(
-    credentials: HTTPAuthorizationCredentials = Depends(bearer),
+    credentials: HTTPAuthorizationCredentials | None = Depends(bearer),
+    x_ecomcare_token: str | None = Header(default=None),
 ) -> dict[str, str]:
     """只从已验签 JWT 构造可信身份，禁止使用请求正文中的 customer_id。"""
+    token = x_ecomcare_token or (credentials.credentials if credentials else None)
+    if not token:
+        raise HTTPException(status_code=401, detail="Missing authentication token")
     try:
         payload = jwt.decode(
-            credentials.credentials, get_settings().jwt_secret, algorithms=["HS256"]
+            token, get_settings().jwt_secret, algorithms=["HS256"]
         )
         return {
             "account_id": payload["sub"],

@@ -13,7 +13,8 @@ export async function request<T>(path: string, token?: string, options?: Request
     ...options,
     headers: {
       "Content-Type": "application/json",
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      // 使用自定义头避免部署平台的代理层占用 Authorization。
+      ...(token ? { "X-EcomCare-Token": token } : {}),
       ...options?.headers,
     },
   });
@@ -37,7 +38,7 @@ export async function streamMessage(
   // fetch + ReadableStream 支持 POST 请求体；原生 EventSource 只能发起 GET。
   const response = await fetch(`${API_URL}/conversations/${conversationId}/messages/stream`, {
     method: "POST",
-    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+    headers: { "Content-Type": "application/json", "X-EcomCare-Token": token },
     body: JSON.stringify({ content }),
   });
   if (!response.ok || !response.body) throw new Error("无法建立流式连接");
