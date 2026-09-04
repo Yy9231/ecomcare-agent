@@ -75,6 +75,8 @@ export default function CustomerChat({ token, customerName, customerId }: {
   ]);
   const [input, setInput] = useState("");
   const [status, setStatus] = useState("正在连接服务…");
+  const [connectionFailed, setConnectionFailed] = useState(false);
+  const [bootstrapAttempt, setBootstrapAttempt] = useState(0);
   const [busy, setBusy] = useState(false);
   const [pendingApproval, setPendingApproval] = useState<PendingApproval | null>(null);
   const endRef = useRef<HTMLDivElement>(null);
@@ -85,10 +87,13 @@ export default function CustomerChat({ token, customerName, customerId }: {
     async function bootstrap() {
       // 消息保存在 PostgreSQL；重新登录时优先恢复最近有内容的会话。
       try {
+        setConnectionFailed(false);
+        setStatus("正在连接服务…");
         const conversations = await request<Conversation[]>("/conversations", token);
         const conversation = conversations.find((item) => item.message_count > 0) ?? conversations[0] ?? await request<Conversation>("/conversations", token, { method: "POST", body: "{}" });
         const snapshot = await request<ConversationSnapshot>(`/conversations/${conversation.id}`, token);
         if (!cancelled) {
+          setConnectionFailed(false);
           setConversationId(conversation.id);
           snapshot.messages.filter((message) => message.role === "human").forEach((message) => seenHumanMessageIds.current.add(message.id));
           const restored = snapshot.messages.length ? snapshot.messages : [
@@ -105,12 +110,15 @@ export default function CustomerChat({ token, customerName, customerId }: {
           }
         }
       } catch (error) {
-        if (!cancelled) setStatus(error instanceof Error ? error.message : "连接失败");
+        if (!cancelled) {
+          setConnectionFailed(true);
+          setStatus(error instanceof Error ? error.message : "连接失败");
+        }
       }
     }
     void bootstrap();
     return () => { cancelled = true; };
-  }, [token]);
+  }, [bootstrapAttempt, token]);
 
   useEffect(() => { endRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages]);
 
@@ -268,19 +276,21 @@ export default function CustomerChat({ token, customerName, customerId }: {
             <p className="font-semibold">与 EcomCare 对话</p>
             <p className="text-xs text-slate-500">当前客户：{customerName} · {customerId}</p>
           </div>
-          <div className="chat-statuses"><ModelSelector token={token} /><span className="status-pill"><i />{status}</span></div>
+          <div className="chat-statuses"><ModelSelector token={token} />{connectionFailed
+            ? <button className="status-pill retry" onClick={() => { setConversationId(""); setBootstrapAttempt((value) => value + 1); }}><i />重新连接</button>
+            : <span className="status-pill"><i />{status}</span>}</div>
         </div>
         <div className="messages">
           {messages.map((message) => <MessageBubble key={message.id} message={message} />)}
           <div ref={endRef} />
         </div>
         <div className="prompt-row">
-          {prompts.map((prompt) => <button key={prompt} disabled={busy || Boolean(pendingApproval)} onClick={() => void send(prompt)}>{prompt}</button>)}
+          {prompts.map((prompt) => <button key={prompt} disabled={busy || !conversationId || Boolean(pendingApproval)} onClick={() => void send(prompt)}>{prompt}</button>)}
         </div>
         <form className="composer" onSubmit={submit}>
           <Package size={18} className="text-slate-400" />
-          <input name="customer-message" autoComplete="off" aria-label="咨询内容" disabled={Boolean(pendingApproval)} value={input} onChange={(event) => setInput(event.target.value)} placeholder={pendingApproval ? "等待客服处理当前售后申请…" : "输入订单号或描述你的问题…"} />
-          <button disabled={busy || Boolean(pendingApproval) || !input.trim()} aria-label="发送"><Send size={17} /></button>
+          <input name="customer-message" autoComplete="off" aria-label="咨询内容" disabled={!conversationId || Boolean(pendingApproval)} value={input} onChange={(event) => setInput(event.target.value)} placeholder={!conversationId ? "连接成功后即可发送消息…" : pendingApproval ? "等待客服处理当前售后申请…" : "输入订单号或描述你的问题…"} />
+          <button disabled={busy || !conversationId || Boolean(pendingApproval) || !input.trim()} aria-label="发送"><Send size={17} /></button>
         </form>
         <p className="safe-note"><CheckCircle2 size={13} /> 高风险操作必须经人工审批，Agent 无法直接退款</p>
       </section>

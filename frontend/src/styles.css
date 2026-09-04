@@ -44,6 +44,8 @@ button { cursor: pointer; }
 .chat-header { padding: 20px 24px; display: flex; justify-content: space-between; border-bottom: 1px solid #e8ebe6; }
 .status-pill { display: flex; align-items: center; gap: 7px; height: fit-content; padding: 7px 10px; border-radius: 999px; color: #386453; background: #edf8f2; font-size: 11px; }
 .status-pill i { width: 7px; height: 7px; border-radius: 50%; background: #23a26d; box-shadow: 0 0 0 3px #a8e0c6; }
+.status-pill.retry { border: 1px solid #e8bcbc; color: #9c3737; background: #fff4f4; cursor: pointer; }
+.status-pill.retry i { background: #d34b4b; box-shadow: 0 0 0 3px #f3caca; }
 .chat-statuses, .workspace-actions { display: flex; align-items: center; gap: 9px; }
 .model-selector-wrap { position: relative; display: flex; align-items: center; }
 .model-selector { display: inline-flex; align-items: center; gap: 5px; min-height: 30px; padding: 5px 8px; border: 1px solid #bde4d1; border-radius: 999px; background: #eaf8f1; color: #17684e; box-shadow: 0 4px 12px rgba(25, 63, 50, .05); }
