@@ -1,4 +1,5 @@
 import json
+import logging
 from datetime import UTC, datetime
 
 from fastapi import APIRouter, Depends, HTTPException, Request
@@ -9,11 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_session
 from app.models import Account, Approval, Conversation, Message, ToolTrace
-from app.schemas import (
-    ApprovalDecision,
-    HumanReplyRequest,
-    MessageRequest,
-)
+from app.schemas import ApprovalDecision, HumanReplyRequest, MessageRequest
 from app.security import current_identity, require_agent, require_customer
 from app.services.conversations import (
     create_human_message,
@@ -22,6 +19,7 @@ from app.services.conversations import (
 )
 
 router = APIRouter(prefix="/api/v1")
+logger = logging.getLogger(__name__)
 
 
 def serialize_sse(event: str, data: dict) -> str:
@@ -207,7 +205,9 @@ async def stream_message(
                 yield serialize_sse("message_delta", {"content": answer[index : index + 18]})
             yield serialize_sse("done", {"status": "completed"})
         except Exception as exc:
-            yield serialize_sse("error", {"message": str(exc)})
+            # 底层数据库或模型异常只写服务端日志，避免把内部实现细节暴露给客户。
+            logger.exception("Agent stream failed conversation_id=%s error_type=%s", conversation_id, type(exc).__name__)
+            yield serialize_sse("error", {"message": "Agent 服务暂时不可用，请稍后重新发送。"})
 
     return StreamingResponse(events(), media_type="text/event-stream")
 

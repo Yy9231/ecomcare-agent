@@ -1,3 +1,7 @@
+from psycopg.rows import dict_row
+from psycopg_pool import AsyncConnectionPool
+
+from app.checkpoint import checkpoint_pool_options
 from app.config import Settings
 from app.database import database_engine_options
 
@@ -38,4 +42,28 @@ def test_database_engine_options_bound_neon_wait_times() -> None:
         "pool_timeout": 9,
         "pool_recycle": 120,
         "connect_args": {"timeout": 8},
+    }
+
+
+def test_checkpoint_pool_checks_and_recycles_cloud_connections() -> None:
+    settings = Settings(
+        _env_file=None,
+        database_pool_timeout_seconds=9,
+        database_pool_recycle_seconds=120,
+    )
+
+    assert checkpoint_pool_options(settings) == {
+        "min_size": 1,
+        "max_size": 4,
+        "timeout": 9,
+        "max_idle": 60,
+        "max_lifetime": 120,
+        "reconnect_timeout": 10,
+        "open": False,
+        "check": AsyncConnectionPool.check_connection,
+        "kwargs": {
+            "autocommit": True,
+            "prepare_threshold": 0,
+            "row_factory": dict_row,
+        },
     }

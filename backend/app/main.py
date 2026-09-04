@@ -9,6 +9,7 @@ from sqlalchemy import text
 
 from app.api import router
 from app.auth import router as auth_router
+from app.checkpoint import create_checkpoint_pool
 from app.config import get_settings
 from app.database import Base, SessionLocal, engine
 from app.model_api import router as model_router
@@ -28,9 +29,11 @@ async def lifespan(app: FastAPI):
     async with SessionLocal() as session:
         await seed_database(session)
     async with AsyncExitStack() as stack:
-        checkpointer = await stack.enter_async_context(
-            AsyncPostgresSaver.from_conn_string(settings.checkpoint_database_url)
-        )
+        # from_conn_string 只创建单条长连接；云数据库回收空闲连接后会永久失效。
+        # 连接池在每次借出前检查健康状态，并自动替换被回收的连接。
+        checkpoint_pool = await stack.enter_async_context(create_checkpoint_pool(settings))
+        await checkpoint_pool.wait(timeout=settings.database_connect_timeout_seconds)
+        checkpointer = AsyncPostgresSaver(checkpoint_pool)
         # checkpoint 持久化 interrupt 的执行位置，服务重启后仍可恢复审批流程。
         await checkpointer.setup()
         app.state.agent_graph = build_graph(checkpointer)
