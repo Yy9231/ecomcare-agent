@@ -14,6 +14,9 @@ function resolveSystemRoute(): SystemRoute {
   const hashPath = window.location.hash.replace(/^#/, "").replace(/\/+$/, "") || "/";
   if (hashPath === "/agent" || hashPath.startsWith("/agent/")) return "agent";
   if (hashPath === "/customer" || hashPath.startsWith("/customer/")) return "customer";
+  // ModelScope 会把应用放进 iframe 并移除 URL hash，使用 query 保留双角色入口。
+  const queryRole = new URLSearchParams(window.location.search).get("role");
+  if (queryRole === "agent" || queryRole === "customer") return queryRole;
   const path = window.location.pathname.replace(/\/+$/, "") || "/";
   if (path === "/") window.history.replaceState(null, "", "/#/customer");
   return path === "/agent" || path.startsWith("/agent/") ? "agent" : "customer";
