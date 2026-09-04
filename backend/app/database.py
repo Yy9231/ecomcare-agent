@@ -21,7 +21,6 @@ def database_engine_options(current_settings: Settings) -> dict:
         "pool_timeout": current_settings.database_pool_timeout_seconds,
         "connect_args": {
             "timeout": current_settings.database_connect_timeout_seconds,
-            "command_timeout": current_settings.database_command_timeout_seconds,
         },
     }
 

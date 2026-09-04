@@ -29,7 +29,6 @@ def test_database_engine_options_bound_neon_wait_times() -> None:
     settings = Settings(
         _env_file=None,
         database_connect_timeout_seconds=8,
-        database_command_timeout_seconds=18,
         database_pool_timeout_seconds=9,
         database_pool_recycle_seconds=120,
     )
@@ -38,5 +37,5 @@ def test_database_engine_options_bound_neon_wait_times() -> None:
         "pool_pre_ping": True,
         "pool_timeout": 9,
         "pool_recycle": 120,
-        "connect_args": {"timeout": 8, "command_timeout": 18},
+        "connect_args": {"timeout": 8},
     }

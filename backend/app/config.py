@@ -11,7 +11,6 @@ class Settings(BaseSettings):
     database_url: str = "postgresql+asyncpg://ecomcare:ecomcare@localhost:5432/ecomcare"
     checkpoint_database_url: str = "postgresql://ecomcare:ecomcare@localhost:5432/ecomcare"
     database_connect_timeout_seconds: float = 10
-    database_command_timeout_seconds: float = 20
     database_pool_timeout_seconds: float = 12
     database_pool_recycle_seconds: int = 120
     jwt_secret: str = "development-only-secret"
