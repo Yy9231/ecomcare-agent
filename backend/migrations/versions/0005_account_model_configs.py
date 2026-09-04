@@ -14,6 +14,21 @@ depends_on = None
 
 
 def upgrade() -> None:
+    # 早期版本会在应用启动时执行 create_all，可能已提前创建此表，但
+    # alembic_version 仍停在 0004。迁移需接管该状态，避免重复建表失败。
+    inspector = sa.inspect(op.get_bind())
+    if "account_model_configs" in inspector.get_table_names():
+        indexes = {
+            index["name"] for index in inspector.get_indexes("account_model_configs")
+        }
+        if "ix_account_model_configs_account_id" not in indexes:
+            op.create_index(
+                "ix_account_model_configs_account_id",
+                "account_model_configs",
+                ["account_id"],
+            )
+        return
+
     op.create_table(
         "account_model_configs",
         sa.Column("id", sa.String(36), primary_key=True),
