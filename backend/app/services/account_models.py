@@ -23,6 +23,10 @@ class ModelConfigInput:
     api_key: str = ""
 
 
+class CredentialDecryptionError(ValueError):
+    """已保存凭据与当前加密密钥不匹配。"""
+
+
 def _fernet(settings: Settings) -> Fernet:
     # 使用独立凭据密钥派生 Fernet key；未配置时仅为本地演示回退到 JWT secret。
     secret = settings.model_credentials_secret.get_secret_value().strip() or settings.jwt_secret
@@ -44,7 +48,7 @@ def decrypt_api_key(ciphertext: str, settings: Settings | None = None) -> str:
     try:
         return _fernet(settings or get_settings()).decrypt(ciphertext.encode()).decode()
     except InvalidToken as exc:
-        raise ValueError("账号模型凭据无法解密，请重新保存 API Key") from exc
+        raise CredentialDecryptionError("账号模型凭据无法解密，请重新保存 API Key") from exc
 
 
 async def _personal_configs(
@@ -122,7 +126,14 @@ async def account_runtime_settings(
         )
     )
     if personal:
-        candidate = _candidate_settings(personal, settings, configured_settings(settings))
+        server_settings = configured_settings(settings)
+        try:
+            candidate = _candidate_settings(personal, settings, server_settings)
+        except CredentialDecryptionError:
+            # 部署密钥轮换后旧密文无法恢复；有服务端配置则使用它，否则安全降级。
+            return server_settings.get(provider) or settings.model_copy(
+                update={"model_enabled": False}
+            )
         resolve_model(candidate)
         return candidate
     try:
@@ -172,6 +183,17 @@ async def model_preferences(
         own = personal.get(provider)
         server_config = server.get(provider)
         resolved_server = resolve_model(server_config) if server_config else None
+        own_has_key = False
+        credential_error = False
+        if own and own.api_key_encrypted:
+            try:
+                own_has_key = bool(decrypt_api_key(own.api_key_encrypted, settings))
+            except CredentialDecryptionError:
+                credential_error = True
+        server_has_key = bool(resolved_server and resolved_server.api_key)
+        own_available = bool(own) and (
+            not spec.api_key_required or own_has_key or server_has_key
+        )
         options.append(
             {
                 "provider": provider,
@@ -180,9 +202,10 @@ async def model_preferences(
                 "base_url": own.base_url if own else resolved_server.base_url if resolved_server else "",
                 "default_base_url": spec.default_base_url,
                 "requires_api_key": spec.api_key_required,
-                "configured": bool(own or server_config),
-                "has_api_key": bool(own and own.api_key_encrypted) or bool(resolved_server and resolved_server.api_key),
-                "source": "account" if own else "server" if server_config else "none",
+                "configured": own_available or bool(server_config),
+                "has_api_key": own_has_key or server_has_key,
+                "credential_error": credential_error,
+                "source": "account" if own_available else "server" if server_config else "none",
             }
         )
     selected_provider = account.model_provider or (
@@ -191,6 +214,8 @@ async def model_preferences(
     selected = next(
         (item for item in options if item["provider"] == selected_provider), options[0]
     )
+    if not selected["configured"]:
+        selected = options[0]
     return {"selected": selected, "options": options}
 
 

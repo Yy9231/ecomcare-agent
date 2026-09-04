@@ -8,6 +8,7 @@ from app.services.account_models import (
     account_runtime_settings,
     decrypt_api_key,
     encrypt_api_key,
+    model_preferences,
     save_model_config,
 )
 
@@ -70,6 +71,28 @@ def test_changed_encryption_secret_rejects_ciphertext() -> None:
     ciphertext = encrypt_api_key("sk-private-value", settings("first"))
     with pytest.raises(ValueError, match="无法解密"):
         decrypt_api_key(ciphertext, settings("second"))
+
+
+@pytest.mark.asyncio
+async def test_rotated_credential_secret_falls_back_to_rule_mode() -> None:
+    session = FakeSession()
+    owner = account()
+    await save_model_config(
+        session,
+        owner,
+        ModelConfigInput("deepseek", "deepseek-chat", api_key="old-secret"),
+        settings("old-encryption-key"),
+    )
+
+    runtime = await account_runtime_settings(session, owner, settings("new-encryption-key"))
+    preferences = await model_preferences(session, owner, settings("new-encryption-key"))
+    deepseek = next(item for item in preferences["options"] if item["provider"] == "deepseek")
+
+    assert runtime.model_enabled is False
+    assert preferences["selected"]["provider"] == "deterministic"
+    assert deepseek["configured"] is False
+    assert deepseek["has_api_key"] is False
+    assert deepseek["credential_error"] is True
 
 
 @pytest.mark.asyncio
