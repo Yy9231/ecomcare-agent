@@ -145,7 +145,7 @@ export default function CustomerChat({ token, customerName, customerId }: {
       } catch {
         // 主发送流程负责展示错误；后台轮询静默重试，避免反复弹出短暂网络错误。
       }
-      if (!cancelled) timer = window.setTimeout(() => void syncHumanReplies(), 1800);
+      if (!cancelled) timer = window.setTimeout(() => void syncHumanReplies(), 5000);
     }
 
     void syncHumanReplies();

@@ -54,6 +54,8 @@ export default function ModelSelector({ token }: { token: string }) {
       // 配置由当前登录账号的 JWT 绑定，前端不提交 account_id。
       const result = await request<ModelPreferences>("/model/preferences", token, {
         method: "PUT",
+        // 云数据库冷连接可能超过普通读取时限，配置写入使用独立预算且不自动重试。
+        timeoutMs: 30_000,
         body: JSON.stringify({
           provider: draft.provider,
           model: draft.provider === "deterministic" ? null : draft.model,

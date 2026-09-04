@@ -1,6 +1,6 @@
 const API_URL = import.meta.env.VITE_API_URL
   ?? (import.meta.env.PROD ? "/api/v1" : "http://localhost:8000/api/v1");
-const REQUEST_TIMEOUT_MS = 12_000;
+const REQUEST_TIMEOUT_MS = 20_000;
 const STREAM_IDLE_TIMEOUT_MS = 45_000;
 
 type RequestOptions = RequestInit & {

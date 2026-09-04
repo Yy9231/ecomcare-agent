@@ -32,11 +32,14 @@ class Result:
 class FakeSession:
     def __init__(self):
         self.configs: list[AccountModelConfig] = []
+        self.read_count = 0
 
     async def scalar(self, statement):
+        self.read_count += 1
         return self.configs[0] if self.configs else None
 
     async def scalars(self, statement) -> Result:
+        self.read_count += 1
         return Result(self.configs)
 
     def add(self, record: AccountModelConfig) -> None:
@@ -91,6 +94,24 @@ async def test_personal_config_is_saved_and_used_without_exposing_key() -> None:
     runtime = await account_runtime_settings(session, owner, settings())
     assert runtime.model_name == "deepseek-chat"
     assert runtime.model_api_key.get_secret_value() == "sk-account-secret"
+
+
+@pytest.mark.asyncio
+async def test_saving_model_config_uses_one_database_read() -> None:
+    """云数据库延迟较高时，保存接口不能在提交后重复查询相同配置。"""
+    session = FakeSession()
+    await save_model_config(
+        session,
+        account(),
+        ModelConfigInput(
+            provider="deepseek",
+            model="deepseek-chat",
+            base_url="https://api.deepseek.com",
+            api_key="sk-account-secret",
+        ),
+        settings(),
+    )
+    assert session.read_count == 1
 
 
 @pytest.mark.asyncio

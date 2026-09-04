@@ -146,7 +146,7 @@ export default function AgentWorkspace({ token }: { token: string }) {
 
   useEffect(() => {
     // 小规模演示采用轮询同步会话、未读和审批；生产环境可替换为推送通道。
-    const timer = window.setInterval(() => void loadDashboard().catch(() => undefined), 3000);
+    const timer = window.setInterval(() => void loadDashboard().catch(() => undefined), 6000);
     return () => window.clearInterval(timer);
   }, [loadDashboard]);
 

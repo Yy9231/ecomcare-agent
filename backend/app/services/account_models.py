@@ -146,6 +146,7 @@ async def model_preferences(
     session: AsyncSession,
     account: Account,
     settings: Settings | None = None,
+    personal_configs: dict[str, AccountModelConfig] | None = None,
 ) -> dict:
     """返回可公开的模型状态；永不把已保存 API Key 明文传回前端。"""
     settings = settings or get_settings()
@@ -162,7 +163,9 @@ async def model_preferences(
     }
     if settings.public_demo_mode:
         return {"selected": rule_option, "options": [rule_option]}
-    personal = await _personal_configs(session, account.id)
+    personal = personal_configs
+    if personal is None:
+        personal = await _personal_configs(session, account.id)
     server = configured_settings(settings)
     options: list[dict] = [rule_option]
     for provider, spec in PROVIDERS.items():
@@ -203,21 +206,18 @@ async def save_model_config(
     if settings.public_demo_mode and provider != "deterministic":
         raise ValueError("公开演示环境已锁定规则模式")
     if provider == "deterministic":
+        personal = await _personal_configs(session, account.id)
         account.model_provider = provider
         account.model_name = None
         await session.commit()
-        return await model_preferences(session, account, settings)
+        return await model_preferences(session, account, settings, personal)
     if provider not in PROVIDERS:
         raise ValueError("不支持该模型供应商")
     model = (payload.model or "").strip()
     if not model:
         raise ValueError("Model 不能为空")
-    existing = await session.scalar(
-        select(AccountModelConfig).where(
-            AccountModelConfig.account_id == account.id,
-            AccountModelConfig.provider == provider,
-        )
-    )
+    personal = await _personal_configs(session, account.id)
+    existing = personal.get(provider)
     encrypted = existing.api_key_encrypted if existing else ""
     if payload.api_key.strip():
         encrypted = encrypt_api_key(payload.api_key.strip(), settings)
@@ -228,7 +228,8 @@ async def save_model_config(
     candidate = _candidate_settings(record, settings, configured_settings(settings))
     resolve_model(candidate)
     session.add(record)
+    personal[provider] = record
     account.model_provider = provider
     account.model_name = model
     await session.commit()
-    return await model_preferences(session, account, settings)
+    return await model_preferences(session, account, settings, personal)
