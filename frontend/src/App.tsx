@@ -52,8 +52,12 @@ export default function App() {
     let cancelled = false;
     validateSession(accessToken).then((renewed) => {
       if (!cancelled) {
-        saveSession(renewed);
-        setSession(renewed);
+        // /auth/me 会返回一个新签发的 Token。继续把它写回 state 会改变
+        // accessToken，从而再次触发本 effect，造成页面永远停在“正在连接服务”。
+        // 校验成功后保留本次已验证的 Token，只同步服务端返回的账号资料。
+        const validated = { ...renewed, access_token: accessToken };
+        saveSession(validated);
+        setSession(validated);
         setChecking(false);
       }
     }).catch(() => {
