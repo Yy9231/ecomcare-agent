@@ -1,7 +1,16 @@
+from unittest.mock import AsyncMock
+
 import pytest
 from fastapi import HTTPException
 
-from app.security import create_token, current_identity, hash_password, verify_password
+from app.models import Account
+from app.security import (
+    active_identity,
+    create_token,
+    current_identity,
+    hash_password,
+    verify_password,
+)
 
 
 def test_password_hash_round_trip() -> None:
@@ -33,3 +42,45 @@ def test_missing_token_is_rejected() -> None:
         current_identity(credentials=None, x_ecomcare_token=None)
 
     assert exc_info.value.status_code == 401
+
+
+@pytest.mark.asyncio
+async def test_deactivated_account_is_rejected_even_with_valid_token_claims() -> None:
+    session = AsyncMock()
+    session.get.return_value = Account(
+        id="ACC-001",
+        username="customer1",
+        password_hash="unused",
+        role="customer",
+        customer_id="CUST-001",
+        active=False,
+    )
+
+    with pytest.raises(HTTPException) as raised:
+        await active_identity(
+            {"account_id": "ACC-001", "customer_id": "CUST-001", "role": "customer"},
+            session,
+        )
+
+    assert raised.value.status_code == 401
+
+
+@pytest.mark.asyncio
+async def test_changed_account_binding_invalidates_old_token_claims() -> None:
+    session = AsyncMock()
+    session.get.return_value = Account(
+        id="ACC-001",
+        username="customer1",
+        password_hash="unused",
+        role="customer",
+        customer_id="CUST-002",
+        active=True,
+    )
+
+    with pytest.raises(HTTPException) as raised:
+        await active_identity(
+            {"account_id": "ACC-001", "customer_id": "CUST-001", "role": "customer"},
+            session,
+        )
+
+    assert raised.value.status_code == 401

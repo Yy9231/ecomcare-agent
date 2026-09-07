@@ -2,6 +2,8 @@ import asyncio
 import json
 from pathlib import Path
 
+from sqlalchemy.exc import SQLAlchemyError
+
 from app.database import SessionLocal
 from app.services.knowledge import search_knowledge
 from app.services.router import deterministic_route
@@ -41,7 +43,14 @@ async def evaluate() -> dict:
 
 
 def main() -> None:
-    print(json.dumps(asyncio.run(evaluate()), ensure_ascii=False, indent=2))
+    try:
+        result = asyncio.run(evaluate())
+    except (ConnectionError, OSError, SQLAlchemyError) as exc:
+        raise SystemExit(
+            "评测数据库连接失败。请先执行 `docker compose up -d db backend`，"
+            "等待健康检查通过后再运行 `make eval`。"
+        ) from exc
+    print(json.dumps(result, ensure_ascii=False, indent=2))
 
 
 if __name__ == "__main__":

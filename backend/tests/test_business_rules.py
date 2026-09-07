@@ -1,6 +1,8 @@
 from datetime import UTC, datetime, timedelta
 from types import SimpleNamespace
 
+from app.models import Order
+from app.seed import refresh_demo_order
 from app.services.embeddings import HashingEmbedder
 from app.services.orders import return_eligibility
 from app.services.tools import build_tools
@@ -21,6 +23,22 @@ def test_return_after_seven_days_is_rejected() -> None:
 def test_shipping_order_cannot_be_returned() -> None:
     order = SimpleNamespace(status="shipping", delivered_at=None)
     assert return_eligibility(order)["eligible"] is False
+
+
+def test_fixed_demo_order_is_refreshed_inside_return_window() -> None:
+    now = datetime(2026, 9, 7, tzinfo=UTC)
+    order = Order(
+        order_no="EC2026080001",
+        customer_id="CUST-001",
+        product_id="PROD-001",
+        status="delivered",
+        amount=336,
+        purchased_at=now - timedelta(days=40),
+        delivered_at=now - timedelta(days=30),
+    )
+    refresh_demo_order(order, now)
+    assert return_eligibility(order, now)["eligible"] is True
+    assert order.delivered_at == now - timedelta(days=3)
 
 
 def test_hash_embedding_is_repeatable_and_normalized() -> None:

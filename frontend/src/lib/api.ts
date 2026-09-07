@@ -42,6 +42,19 @@ export class ApiError extends Error {
   }
 }
 
+function errorMessage(body: unknown, fallback: string): string {
+  if (!body || typeof body !== "object" || !("detail" in body)) return fallback;
+  const detail = body.detail;
+  if (typeof detail === "string") return detail;
+  if (Array.isArray(detail)) {
+    const messages = detail
+      .map((item) => item && typeof item === "object" && "msg" in item ? String(item.msg) : "")
+      .filter(Boolean);
+    if (messages.length) return messages.join("；");
+  }
+  return fallback;
+}
+
 export async function request<T>(path: string, token?: string, options: RequestOptions = {}): Promise<T> {
   const { timeoutMs = REQUEST_TIMEOUT_MS, retries, ...fetchOptions } = options;
   const method = (fetchOptions.method ?? "GET").toUpperCase();
@@ -60,7 +73,7 @@ export async function request<T>(path: string, token?: string, options: RequestO
       if (response.ok) return response.json() as Promise<T>;
       if ([502, 503, 504].includes(response.status) && attempt < retryCount) continue;
       const body = await response.json().catch(() => ({ detail: response.statusText }));
-      throw new ApiError(body.detail ?? "请求失败", response.status);
+      throw new ApiError(errorMessage(body, "请求失败"), response.status);
     } catch (error) {
       if (error instanceof ApiError || attempt === retryCount) throw error;
       await new Promise((resolve) => window.setTimeout(resolve, 400));
@@ -101,7 +114,8 @@ export async function streamMessage(
   }
   if (!response.ok || !response.body) {
     window.clearTimeout(idleTimer);
-    throw new Error("无法建立流式连接");
+    const body = await response.json().catch(() => null);
+    throw new ApiError(errorMessage(body, "无法建立流式连接"), response.status);
   }
   const reader = response.body.getReader();
   const decoder = new TextDecoder();

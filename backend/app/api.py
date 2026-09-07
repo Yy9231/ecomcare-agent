@@ -1,17 +1,16 @@
 import json
 import logging
-from datetime import UTC, datetime
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import StreamingResponse
-from langgraph.types import Command
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_session
-from app.models import Account, Approval, Conversation, Message, ToolTrace
+from app.models import Approval, Conversation, Message, ToolTrace
 from app.schemas import ApprovalDecision, HumanReplyRequest, MessageRequest
-from app.security import current_identity, require_agent, require_customer
+from app.security import active_identity, require_agent, require_customer
+from app.services.approvals import ApprovalConflictError, decide_pending_approval
 from app.services.conversations import (
     create_human_message,
     list_conversation_summaries,
@@ -40,7 +39,7 @@ async def create_conversation(
 
 @router.get("/conversations")
 async def list_conversations(
-    identity: dict = Depends(current_identity), session: AsyncSession = Depends(get_session)
+    identity: dict = Depends(active_identity), session: AsyncSession = Depends(get_session)
 ) -> list[dict]:
     return await list_conversation_summaries(session, identity)
 
@@ -71,7 +70,7 @@ async def mark_conversation_read(
 @router.get("/conversations/{conversation_id}")
 async def get_conversation(
     conversation_id: str,
-    identity: dict = Depends(current_identity),
+    identity: dict = Depends(active_identity),
     session: AsyncSession = Depends(get_session),
 ) -> dict:
     conversation = await _owned_conversation(session, conversation_id, identity)
@@ -131,14 +130,12 @@ async def stream_message(
     conversation_id: str,
     payload: MessageRequest,
     request: Request,
-    identity: dict = Depends(current_identity),
+    identity: dict = Depends(require_customer),
     session: AsyncSession = Depends(get_session),
 ) -> StreamingResponse:
     await _owned_conversation(session, conversation_id, identity)
-    account = await session.get(Account, identity["account_id"])
-    if not account or not account.active:
-        raise HTTPException(status_code=401, detail="账号已失效")
-    session.add(Message(conversation_id=conversation_id, role="user", content=payload.content))
+    user_message = Message(conversation_id=conversation_id, role="user", content=payload.content)
+    session.add(user_message)
     await session.commit()
 
     async def events():
@@ -150,7 +147,9 @@ async def stream_message(
                     "customer_id": identity["customer_id"],
                     "conversation_id": conversation_id,
                     "user_message": payload.content,
-                    "requesting_account_id": account.id,
+                    # 使用本次已落库消息 ID 区分内容相同的两次合法售后申请。
+                    "idempotency_key": f"{conversation_id}:{user_message.id}",
+                    "requesting_account_id": identity["account_id"],
                     "messages": [{"role": "user", "content": payload.content}],
                 },
                 config={"configurable": {"thread_id": conversation_id}},
@@ -254,23 +253,12 @@ async def decide_approval(
     _: dict = Depends(require_agent),
     session: AsyncSession = Depends(get_session),
 ) -> dict:
-    # 先持久化客服决定，再用同一 thread_id 恢复原工作流。
-    approval = await session.get(Approval, approval_id)
-    if not approval:
-        raise HTTPException(status_code=404, detail="Approval not found")
-    if approval.status != "pending":
-        raise HTTPException(status_code=409, detail="Approval already decided")
-    approval.status = "approved" if payload.decision == "approve" else "rejected"
-    approval.decided_at = datetime.now(UTC)
-    await session.commit()
-    result = await request.app.state.agent_graph.ainvoke(
-        Command(resume={"decision": payload.decision, "note": payload.note}),
-        config={"configurable": {"thread_id": approval.conversation_id}},
-    )
-    answer = result.get("answer", "审批已处理。")
-    session.add(Message(conversation_id=approval.conversation_id, role="assistant", content=answer))
-    await session.commit()
-    return {"approval_id": approval.id, "status": approval.status, "answer": answer}
+    try:
+        return await decide_pending_approval(
+            session, request.app.state.agent_graph, approval_id, payload.decision, payload.note
+        )
+    except ApprovalConflictError as exc:
+        raise HTTPException(status_code=exc.status_code, detail=exc.detail) from exc
 
 
 @router.get("/metrics/summary")

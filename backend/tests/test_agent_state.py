@@ -26,6 +26,7 @@ async def test_route_node_clears_previous_turn_output(monkeypatch) -> None:
             "customer_id": "customer-1",
             "user_message": "手机无法开机怎么办？",
             "requesting_account_id": "account-1",
+            "idempotency_key": "conversation-1:message-1",
             "answer": "未找到属于当前客户的订单。",
             "model_provider": "deepseek",
             "model_name": "deepseek-v4-flash",
@@ -39,6 +40,7 @@ async def test_route_node_clears_previous_turn_output(monkeypatch) -> None:
     assert update["model_provider"] is None
     assert update["model_name"] is None
     assert update["model_used"] is False
+    assert update["idempotency_key"] == "conversation-1:message-1"
 
 
 def test_general_chat_skips_business_tools() -> None:

@@ -67,14 +67,18 @@ async def route_message(message: str, settings: Settings | None = None) -> Route
     # 寒暄由服务端确定性识别，不能让模型把“你好”误判成高成本的人工转接。
     if not settings.model_enabled or baseline.intent == "general_chat":
         return baseline
-    return await invoke_structured(
-        "你是3C商城客服路由器。只选择一个最匹配的意图，不得编造订单号。\n"
-        "意图定义：order_query=查询订单；logistics_query=查询物流；"
-        "knowledge_query=商品、保修或政策知识；return_check=判断能否退货；"
-        "after_sales=明确要求创建退货或售后申请；general_chat=问候、自我介绍、感谢等普通对话；"
-        "escalate=用户明确要求真人客服、投诉或要求经理介入。"
-        "普通问候和一般问题不得选择 escalate。\n"
-        f"用户消息：{message}",
-        RouteDecision,
-        settings,
-    )
+    try:
+        return await invoke_structured(
+            "你是3C商城客服路由器。只选择一个最匹配的意图，不得编造订单号。\n"
+            "意图定义：order_query=查询订单；logistics_query=查询物流；"
+            "knowledge_query=商品、保修或政策知识；return_check=判断能否退货；"
+            "after_sales=明确要求创建退货或售后申请；general_chat=问候、自我介绍、感谢等普通对话；"
+            "escalate=用户明确要求真人客服、投诉或要求经理介入。"
+            "普通问候和一般问题不得选择 escalate。\n"
+            f"用户消息：{message}",
+            RouteDecision,
+            settings,
+        )
+    except Exception:
+        # 路由模型超时或返回非法结构时使用确定性结果，保证客服主链路仍可回答。
+        return baseline

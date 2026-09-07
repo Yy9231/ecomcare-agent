@@ -7,8 +7,11 @@ from datetime import UTC, datetime, timedelta
 import jwt
 from fastapi import Depends, Header, HTTPException
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import get_settings
+from app.database import get_session
+from app.models import Account
 
 bearer = HTTPBearer(auto_error=False)
 
@@ -70,13 +73,29 @@ def current_identity(
         raise HTTPException(status_code=401, detail="Invalid or expired token") from exc
 
 
-def require_agent(identity: dict[str, str] = Depends(current_identity)) -> dict[str, str]:
+async def active_identity(
+    identity: dict[str, str] = Depends(current_identity),
+    session: AsyncSession = Depends(get_session),
+) -> dict[str, str]:
+    """每次请求复核账号状态及 JWT 身份绑定，使停用账号立即失去访问权限。"""
+    account = await session.get(Account, identity["account_id"])
+    if (
+        not account
+        or not account.active
+        or account.customer_id != identity["customer_id"]
+        or account.role != identity["role"]
+    ):
+        raise HTTPException(status_code=401, detail="账号已失效")
+    return identity
+
+
+def require_agent(identity: dict[str, str] = Depends(active_identity)) -> dict[str, str]:
     if identity["role"] != "agent":
         raise HTTPException(status_code=403, detail="Agent role required")
     return identity
 
 
-def require_customer(identity: dict[str, str] = Depends(current_identity)) -> dict[str, str]:
+def require_customer(identity: dict[str, str] = Depends(active_identity)) -> dict[str, str]:
     if identity["role"] != "customer":
         raise HTTPException(status_code=403, detail="Customer role required")
     return identity

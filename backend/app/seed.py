@@ -29,6 +29,22 @@ POLICIES = [
 ]
 
 
+def refresh_demo_order(order: Order, now: datetime | None = None) -> None:
+    """保持固定演示订单处于七天退货期内，避免长期部署后主链路过期。"""
+    current = now or datetime.now(UTC)
+    order.status = "delivered"
+    order.purchased_at = current - timedelta(days=5)
+    order.delivered_at = current - timedelta(days=3)
+    order.estimated_delivery = order.delivered_at
+
+
+async def ensure_demo_scenario(session: AsyncSession) -> None:
+    """仅刷新合成账号的固定演示订单，不修改注册客户的业务数据。"""
+    order = await session.scalar(select(Order).where(Order.order_no == "EC2026080001"))
+    if order:
+        refresh_demo_order(order)
+
+
 async def ensure_product_knowledge(session: AsyncSession) -> None:
     """幂等补齐或更新每个商品的介绍与参数，兼容已经存在的演示数据库。"""
     products = (await session.scalars(select(Product).order_by(Product.sku))).all()
@@ -145,5 +161,6 @@ async def seed_database(session: AsyncSession) -> None:
             Account(id="ACCOUNT-CUST-002", username="customer2", password_hash=hash_password("customer123"), role="customer", customer_id="CUST-002"),
             Account(id="ACCOUNT-AGENT-001", username="agent", password_hash=hash_password("agent123"), role="agent", customer_id="AGENT-001"),
         ])
+    await ensure_demo_scenario(session)
     await ensure_product_knowledge(session)
     await session.commit()

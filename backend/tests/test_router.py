@@ -41,3 +41,17 @@ async def test_greeting_bypasses_model_router(monkeypatch) -> None:
         Settings(_env_file=None, model_enabled=True),
     )
     assert decision.intent == "general_chat"
+
+
+@pytest.mark.asyncio
+async def test_model_router_failure_falls_back_to_deterministic_route(monkeypatch) -> None:
+    async def unavailable_model(*args, **kwargs):
+        raise TimeoutError("provider timed out")
+
+    monkeypatch.setattr(router, "invoke_structured", unavailable_model)
+    decision = await route_message(
+        "订单 EC2026080001 的物流到哪了？",
+        Settings(_env_file=None, model_enabled=True),
+    )
+    assert decision.intent == "logistics_query"
+    assert decision.order_no == "EC2026080001"

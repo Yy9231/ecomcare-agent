@@ -13,6 +13,14 @@ def _normalize_username(value: str) -> str:
     return normalized
 
 
+def _normalize_message(value: str) -> str:
+    """去除首尾空白，避免把全空格内容写入会话数据库。"""
+    normalized = value.strip()
+    if not normalized:
+        raise ValueError("消息内容不能为空")
+    return normalized
+
+
 class LoginRequest(BaseModel):
     username: str = Field(min_length=3, max_length=80)
     password: str = Field(min_length=8, max_length=128)
@@ -51,9 +59,13 @@ class ConversationCreate(BaseModel):
 class MessageRequest(BaseModel):
     content: str = Field(min_length=1, max_length=2000)
 
+    normalize_content = field_validator("content")(_normalize_message)
+
 
 class HumanReplyRequest(BaseModel):
     content: str = Field(min_length=1, max_length=2000)
+
+    normalize_content = field_validator("content")(_normalize_message)
 
 
 class ModelPreferenceUpdate(BaseModel):

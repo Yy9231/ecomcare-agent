@@ -1,5 +1,4 @@
 import time
-import uuid
 from typing import Annotated, TypedDict
 
 from langgraph.graph import END, START, StateGraph
@@ -49,7 +48,8 @@ async def route_node(state: AgentState) -> dict:
         "intent": decision.intent,
         "order_no": decision.order_no,
         "reason": decision.reason,
-        "idempotency_key": f"{state['conversation_id']}:{uuid.uuid5(uuid.NAMESPACE_URL, state['user_message'])}",
+        # API 以已持久化的用户消息 ID 生成本轮键；恢复 checkpoint 时保持不变。
+        "idempotency_key": state["idempotency_key"],
         "answer": None,
         "tool_name": None,
         "tool_result": {},
