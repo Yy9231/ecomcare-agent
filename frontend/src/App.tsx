@@ -47,6 +47,11 @@ export default function App() {
   }, [isAgent]);
 
   useEffect(() => {
+    // 切换客户/客服入口时回到页面顶部，避免浏览器恢复旧滚动位置遮住指标卡。
+    window.scrollTo({ top: 0, left: 0 });
+  }, [route, session?.role]);
+
+  useEffect(() => {
     if (!accessToken) return;
     // 本地 Token 只用于恢复候选登录态，页面启动后仍由服务端 /auth/me 验证。
     let cancelled = false;

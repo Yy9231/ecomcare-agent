@@ -133,7 +133,7 @@ button { cursor: pointer; }
   white-space: nowrap;
 }
 .workspace-grid { margin-top: 18px; display: grid; grid-template-columns: .8fr 1.15fr .9fr; gap: 14px; min-height: 520px; }
-.panel { overflow: hidden; border: 1px solid var(--line); border-radius: 18px; background: #fff; }
+.panel { min-width: 0; min-height: 0; overflow: hidden; border: 1px solid var(--line); border-radius: 18px; background: #fff; }
 .panel-heading { padding: 17px 18px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #e8ece7; }
 .panel-heading div { display: flex; align-items: center; gap: 8px; }
 .panel-heading span { color: #26372f; font-size: 14px; font-weight: 650; }
@@ -150,7 +150,7 @@ button { cursor: pointer; }
 .conversation-list em { padding: 3px 5px; border-radius: 5px; color: #995f1f; background: #fff1dc; font-size: 9px; font-style: normal; }
 .conversation-list em.auto { color: #327156; background: #e6f4ed; }
 .empty-list, .empty-detail { padding: 80px 20px; color: #97a099; font-size: 12px; text-align: center; }
-.detail-content { height: 100%; display: flex; flex-direction: column; }
+.detail-content { min-height: 0; height: 100%; display: flex; flex-direction: column; }
 .detail-title { padding: 16px 18px; display: flex; justify-content: space-between; border-bottom: 1px solid #e8ece7; }
 .detail-title div { display: grid; }
 .detail-title span { color: #929b95; font-size: 9px; text-transform: uppercase; }
@@ -337,6 +337,39 @@ button:focus-visible, input:focus-visible, textarea:focus-visible {
 .decision-row button:hover { transform: translateY(-1px); }
 .decision-row .reject:hover { border-color: #d7aaaa; background: #fff7f7; }
 .decision-row .approve:hover { background: var(--green-dark); }
+
+/* 宽屏工作台始终占满浏览器剩余高度，滚动限制在三个业务面板内部。 */
+@media (min-width: 1001px) {
+  .app-shell.agent { height: 100dvh; min-height: 0; overflow: hidden; }
+  .app-shell.agent main { height: calc(100dvh - 76px); min-height: 0; }
+  .workspace-shell {
+    height: 100%;
+    padding-block: clamp(16px, 2.4vh, 30px);
+    display: grid;
+    grid-template-rows: auto auto minmax(0, 1fr);
+    row-gap: clamp(12px, 1.8vh, 18px);
+  }
+  .workspace-heading { margin-bottom: 0; }
+  .workspace-grid { min-height: 0; height: 100%; margin-top: 0; }
+  .conversations-panel, .approvals-panel { display: flex; flex-direction: column; }
+  .conversation-list, .approval-list { min-height: 0; max-height: none; flex: 1; }
+  .detail-messages { min-height: 0; max-height: none; flex: 1; }
+  .human-reply { flex: 0 0 auto; }
+  .approval-empty { min-height: 100%; }
+}
+
+@media (min-width: 1001px) and (max-height: 800px) {
+  .workspace-heading h1 { font-size: 30px; }
+  .workspace-heading span { font-size: 11px; }
+  .metric-card { min-height: 74px; padding: 12px 14px; }
+  .metric-icon { width: 34px; height: 34px; }
+  .metric-card strong { font-size: 20px; }
+  .panel-heading { min-height: 50px; padding: 13px 15px; }
+  .detail-title { padding: 12px 15px; }
+  .detail-messages { padding: 11px 15px; }
+  .human-reply { padding: 11px 15px; gap: 8px; }
+  .human-reply-composer textarea { min-height: 52px; }
+}
 
 @media (max-width: 1000px) {
   .workspace-grid { grid-template-columns: minmax(260px, .8fr) 1.2fr; }

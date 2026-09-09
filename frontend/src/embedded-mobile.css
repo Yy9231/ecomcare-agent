@@ -85,7 +85,9 @@ html.embedded-mobile .app-shell {
 .embedded-mobile .composer { margin-inline: 9px; padding: 7px 8px; }
 .embedded-mobile .safe-note { padding-inline: 12px; text-align: center; }
 
-.embedded-mobile .workspace-shell { width: 100%; padding: 16px; }
+.embedded-mobile .app-shell.agent { height: auto; min-height: 100vh; overflow: visible; }
+.embedded-mobile .app-shell.agent main { height: auto; }
+.embedded-mobile .workspace-shell { width: 100%; height: auto; padding: 16px; display: block; }
 .embedded-mobile .workspace-heading { align-items: flex-end; }
 .embedded-mobile .workspace-heading h1 { font-size: 28px; }
 .embedded-mobile .workspace-heading span { display: none; }
@@ -97,7 +99,7 @@ html.embedded-mobile .app-shell {
 }
 .embedded-mobile .metric-icon { width: 34px; height: 34px; }
 .embedded-mobile .metric-card strong { font-size: 20px; }
-.embedded-mobile .workspace-grid { grid-template-columns: 1fr; }
+.embedded-mobile .workspace-grid { height: auto; margin-top: 18px; grid-template-columns: 1fr; }
 .embedded-mobile .approvals-panel { grid-column: auto; }
-.embedded-mobile .conversation-list { max-height: 330px; }
-.embedded-mobile .detail-messages { max-height: 300px; }
+.embedded-mobile .conversation-list { max-height: 330px; flex: none; }
+.embedded-mobile .detail-messages { max-height: 300px; flex: none; }
