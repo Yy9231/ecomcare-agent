@@ -79,11 +79,6 @@ async def get_conversation(
             select(Message).where(Message.conversation_id == conversation_id).order_by(Message.created_at)
         )
     ).all()
-    traces = (
-        await session.scalars(
-            select(ToolTrace).where(ToolTrace.conversation_id == conversation_id).order_by(ToolTrace.created_at)
-        )
-    ).all()
     latest_approval = await session.scalar(
         select(Approval)
         .where(Approval.conversation_id == conversation_id)
@@ -112,16 +107,6 @@ async def get_conversation(
         }
         if latest_approval
         else None,
-        "traces": [
-            {
-                "id": item.id,
-                "tool_name": item.tool_name,
-                "success": item.success,
-                "duration_ms": item.duration_ms,
-                "output": item.output_data,
-            }
-            for item in traces
-        ],
     }
 
 

@@ -32,14 +32,6 @@ export type Approval = {
   created_at: string;
 };
 
-export type Trace = {
-  id: string;
-  tool_name: string;
-  success: boolean;
-  duration_ms: number;
-  output: Record<string, unknown>;
-};
-
 export type Metrics = {
   conversations: number;
   resolution_rate: number;

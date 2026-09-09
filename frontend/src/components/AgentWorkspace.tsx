@@ -1,7 +1,7 @@
-import { BrainCircuit, Check, ChevronRight, Clock3, MessageSquareReply, RefreshCw, Send, ShieldAlert, WandSparkles, Wrench, X } from "lucide-react";
+import { Check, ChevronRight, Clock3, MessageSquareReply, RefreshCw, Send, ShieldAlert, WandSparkles, X } from "lucide-react";
 import { FormEvent, useCallback, useEffect, useState } from "react";
 import { request } from "../lib/api";
-import type { Approval, Conversation, Metrics, Trace } from "../types";
+import type { Approval, Conversation, Metrics } from "../types";
 import MetricsCards from "./MetricsCards";
 import ModelSelector from "./ModelSelector";
 
@@ -10,7 +10,6 @@ type Detail = {
   customer_id: string;
   escalated: boolean;
   messages: Array<{ id: string; role: string; content: string }>;
-  traces: Trace[];
 };
 
 type RefreshState = "idle" | "loading" | "success";
@@ -88,7 +87,7 @@ function ConversationDetail({ detail, replying, onReply, onSuggest }: {
   onReply: (conversationId: string, content: string) => Promise<boolean>;
   onSuggest: (conversationId: string) => Promise<string | null>;
 }) {
-  if (!detail) return <div className="empty-detail">选择一条会话查看 Agent 执行轨迹</div>;
+  if (!detail) return <div className="empty-detail">选择一条会话查看聊天记录</div>;
   return (
     <div className="detail-content">
       <div className="detail-title"><div><span>会话详情</span><strong>{detail.customer_id}</strong></div>{detail.escalated ? <b>已转人工</b> : <b className="resolved">自动处理中</b>}</div>
@@ -96,17 +95,6 @@ function ConversationDetail({ detail, replying, onReply, onSuggest }: {
         {detail.messages.map((message) => <div key={message.id} className={`mini-message ${message.role}`}><span>{message.role === "user" ? "客户" : message.role === "human" ? "人工客服" : "Agent"}</span><p>{message.content}</p></div>)}
       </div>
       <HumanReplyComposer conversationId={detail.id} takingOver={!detail.escalated} replying={replying} onReply={onReply} onSuggest={onSuggest} />
-      <div className="trace-list">
-        <h4><Wrench size={15} /> Agent 执行轨迹</h4>
-        {detail.traces.map((trace) => (
-          <div key={trace.id} className={`trace-row ${trace.tool_name.startsWith("llm_") ? "model" : "tool"}`}>
-            <i className={trace.success ? "success" : "failure"} />
-            <div><strong>{trace.tool_name === "llm_generate" ? <><BrainCircuit size={11} /> 大模型生成</> : trace.tool_name}</strong><span>{trace.duration_ms} ms</span></div>
-            <code>{JSON.stringify(trace.output).slice(0, 100)}</code>
-          </div>
-        ))}
-        {!detail.traces.length ? <p className="text-sm text-slate-400">暂无工具调用</p> : null}
-      </div>
     </div>
   );
 }
@@ -238,7 +226,7 @@ export default function AgentWorkspace({ token }: { token: string }) {
       <MetricsCards metrics={metrics} />
       <div className="workspace-grid">
         <section className="panel conversations-panel">
-          <div className="panel-heading"><div><span>最近会话</span><strong>{conversations.length}</strong></div><p>实时审计 Agent 行为</p></div>
+          <div className="panel-heading"><div><span>最近会话</span><strong>{conversations.length}</strong></div><p>按时间查看客户消息</p></div>
           <div className="conversation-list">
             {conversations.map((item) => (
               <button

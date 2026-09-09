@@ -179,17 +179,6 @@ button { cursor: pointer; }
 .human-reply-composer textarea:focus { border-color: #5a947c; box-shadow: 0 0 0 3px #dcefe7; }
 .human-reply-composer button { padding: 9px 11px; display: flex; align-items: center; gap: 5px; border: 0; border-radius: 8px; color: white; background: var(--green); font-size: 10px; }
 .human-reply-composer button:disabled { cursor: not-allowed; opacity: .45; }
-.trace-list { padding: 15px 18px; }
-.trace-list h4 { margin-bottom: 12px; display: flex; align-items: center; gap: 6px; color: #53635a; font-size: 11px; }
-.trace-row { display: grid; grid-template-columns: 9px 1fr; gap: 7px; padding: 9px 0; border-bottom: 1px dashed #e1e6e1; }
-.trace-row > i { width: 7px; height: 7px; margin-top: 4px; border-radius: 50%; background: #d95050; }
-.trace-row > i.success { background: #36a875; }
-.trace-row div { display: flex; justify-content: space-between; }
-.trace-row strong, .trace-row span { font-size: 10px; }
-.trace-row strong { display: inline-flex; align-items: center; gap: 4px; }
-.trace-row.model { margin: 3px 0; padding: 9px 8px; border: 1px solid #d9eee3; border-radius: 9px; background: #f3fbf7; }
-.trace-row span { color: #98a098; }
-.trace-row code { grid-column: 2; overflow: hidden; color: #7a857e; font-size: 8px; white-space: nowrap; }
 .approval-list { padding: 12px; }
 .approval-card { padding: 14px; border: 1px solid #eadfcf; border-radius: 13px; background: #fffdf8; }
 .pending-badge { display: inline-flex; align-items: center; gap: 4px; padding: 3px 6px; border-radius: 5px; color: #9c6728; background: #fff0d7; font-size: 9px; }
@@ -343,7 +332,6 @@ button:focus-visible, input:focus-visible, textarea:focus-visible {
 .quick-replies { scrollbar-color: #c8d5ce transparent; scrollbar-width: thin; }
 .quick-replies button { transition: color .16s ease, border-color .16s ease, background-color .16s ease; }
 .human-reply-composer textarea { transition: border-color .16s ease, box-shadow .16s ease; }
-.trace-row code { text-overflow: ellipsis; }
 .approval-card { box-shadow: 0 8px 20px rgba(100, 74, 30, .055); }
 .decision-row button { transition: border-color .16s ease, background-color .16s ease, transform .16s ease; }
 .decision-row button:hover { transform: translateY(-1px); }
